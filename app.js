@@ -11,8 +11,8 @@ const GameBoard = (() => {
   };
 
   const resetBoard = () => {
-    for (let i = 0; i < 9; i++) {
-      return (_gameboard[i] = null);
+    for (let i = 0; i < _gameboard.length; i++) {
+      _gameboard[i] = null;
     }
   };
 
@@ -37,6 +37,12 @@ const Gamestart = (() => {
   const player1El = document.getElementById("player1name");
   const player2El = document.getElementById("player2name");
 
+  const restart = () => {
+    startCard.style.display = "flex";
+    scoreCard.style.display = "none";
+    gameBoardDiv.style.display = "none";
+  };
+
   const start = () => {
     if (playerXName.value === "" || playerOName.value === "") {
       alert("Enter players name");
@@ -58,7 +64,7 @@ const Gamestart = (() => {
     ];
   };
 
-  return { start, setPlayers };
+  return { start, setPlayers, restart };
 })();
 
 // DISPLAY THE GAME
@@ -76,7 +82,12 @@ const Displaycontroller = (() => {
     winnerDiv.style.display = "flex";
   };
 
-  const displayTie = winner => {
+  const displayTieGame = () => {
+    winnerTextEl.textContent = `Tie Game`;
+    winnerDiv.style.display = "flex";
+  };
+
+  const displayTieRound = () => {
     winnerTextEl.textContent = `Tie Game`;
     winnerDiv.style.display = "flex";
     playAgainBtn.style.display = "none";
@@ -91,6 +102,11 @@ const Displaycontroller = (() => {
     playerOScoreEl.textContent = playerOScore;
   };
 
+  const resetScore = () => {
+    playerXScoreEl.textContent = 0;
+    playerOScoreEl.textContent = 0;
+  };
+
   const resetDisplayBoard = () => {
     boxes.forEach(box => {
       box.textContent = "";
@@ -98,10 +114,7 @@ const Displaycontroller = (() => {
     });
   };
 
-  const playAgain = () => {
-    winnerDiv.style.display = "none";
-  };
-
+  // GAMEBOARD BOXES EVENT LISTERNER
   boxes.forEach((box, index) => {
     box.addEventListener("click", () => Gamecontroller.handleClick(box, index));
   });
@@ -109,11 +122,15 @@ const Displaycontroller = (() => {
   // GAME START BUTTON
   startBtn.addEventListener("click", Gamestart.start);
 
+  // PLAY AGAIN BUTTON AFTER GAMEOVER
+  playAgainBtn.addEventListener("click", () => Gamecontroller.playAgain());
+
   return {
     displayWinner,
-    displayTie,
+    displayTieGame,
+    displayTieRound,
     closeDisplayText,
-    playAgain,
+    resetScore,
     updateScore,
     resetDisplayBoard,
   };
@@ -131,53 +148,63 @@ const Gamecontroller = (() => {
       el.textContent = sign;
       el.classList.add("signed");
     }
-    // el.removeEventListener("click");
   };
 
   const handleClick = (box, index) => {
-    if (currentPlayer === "PlayerX") {
-      GameBoard.setGameBoard(index, "X");
-      addSignToBox(box, "X");
-      // currentPlayer = "PlayerO";
-    } else {
-      GameBoard.setGameBoard(index, "O");
-      addSignToBox(box, "O");
-      // currentPlayer = "PlayerX";
-    }
-
-    if (checkForWinner(GameBoard.getGameBoard())) {
-      switch (currentPlayer) {
-        case "PlayerX":
-          playerXScore++;
-          Displaycontroller.updateScore(playerXScore, playerOScore);
-          Displaycontroller.resetDisplayBoard();
-          GameBoard.resetBoard();
-          break;
-        case "PlayerO":
-          playerOScore++;
-          Displaycontroller.updateScore(playerXScore, playerOScore);
-          Displaycontroller.resetDisplayBoard();
-          GameBoard.resetBoard();
-          break;
-      }
-    } else if (checkForTie(GameBoard.getGameBoard())) {
-      Displaycontroller.displayTie();
-      setTimeout(Displaycontroller.closeDisplayText, 2000);
-      Displaycontroller.resetDisplayBoard();
-      GameBoard.resetBoard();
-    }
-    currentPlayer === "PlayerX"
-      ? (currentPlayer = "PlayerO")
-      : (currentPlayer = "PlayerX");
-
     let players = Gamestart.setPlayers();
-    if (playerXScore === 3) {
-      Displaycontroller.displayWinner(players[0].name);
-    } else if (playerOScore === 3) {
-      Displaycontroller.displayWinner(players[1].name);
+    let currentbox = box.textContent;
+
+    if (currentbox === "") {
+      if (currentPlayer === "PlayerX") {
+        GameBoard.setGameBoard(index, "X");
+        addSignToBox(box, "X");
+      } else {
+        GameBoard.setGameBoard(index, "O");
+        addSignToBox(box, "O");
+      }
+      // CHECKING FOR WINNER AND DISPLAYING
+      if (checkForWinner(GameBoard.getGameBoard())) {
+        switch (currentPlayer) {
+          case "PlayerX":
+            GameBoard.resetBoard();
+            playerXScore++;
+            Displaycontroller.updateScore(playerXScore, playerOScore);
+            Displaycontroller.resetDisplayBoard();
+            break;
+          case "PlayerO":
+            GameBoard.resetBoard();
+            playerOScore++;
+            Displaycontroller.updateScore(playerXScore, playerOScore);
+            Displaycontroller.resetDisplayBoard();
+            break;
+        }
+      } else if (checkForTie(GameBoard.getGameBoard())) {
+        GameBoard.resetBoard();
+        Displaycontroller.displayTieRound();
+        setTimeout(Displaycontroller.closeDisplayText, 2000);
+        Displaycontroller.resetDisplayBoard();
+      }
+
+      currentbox.textContent = "";
+
+      // SWITCHING THE PLAYER TURNS
+      currentPlayer === "PlayerX"
+        ? (currentPlayer = "PlayerO")
+        : (currentPlayer = "PlayerX");
+
+      if (playerXScore === 3) {
+        Displaycontroller.displayWinner(players[0].name);
+      } else if (playerOScore === 3) {
+        Displaycontroller.displayWinner(players[1].name);
+      } else if (playerXScore === 3 && playerOScore === 3) {
+        Displaycontroller.displayTieGame();
+      }
+    } else {
+      alert("Move Played");
     }
   };
 
+  // FUNCTION TO CHECK FOR WINNERS
   const checkForWinner = board => {
     const _winningCombos = [
       [0, 1, 2],
@@ -198,9 +225,21 @@ const Gamecontroller = (() => {
     }
   };
 
+  // FUNCTION TO CHECK FOR TIES
   const checkForTie = board => {
     return board.every(box => box !== null);
   };
 
-  return { handleClick };
+  const playAgain = () => {
+    GameBoard.resetBoard();
+    Displaycontroller.resetDisplayBoard();
+    Displaycontroller.resetScore();
+    Gamestart.restart();
+    Displaycontroller.closeDisplayText();
+    currentPlayer = "PlayerX";
+    playerXScore = 0;
+    playerOScore = 0;
+  };
+
+  return { handleClick, playAgain };
 })();
