@@ -196,8 +196,6 @@ const Gamecontroller = (() => {
         Displaycontroller.displayWinner(players[0].name);
       } else if (playerOScore === 3) {
         Displaycontroller.displayWinner(players[1].name);
-      } else if (playerXScore === 3 && playerOScore === 3) {
-        Displaycontroller.displayTieGame();
       }
     } else {
       alert("Move Played");
